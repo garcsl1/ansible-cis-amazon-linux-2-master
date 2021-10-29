@@ -1,0 +1,25 @@
+# Standards: 0.11
+---
+
+- name: Restart sshd
+  service:
+     name: sshd
+     state: restarted
+
+- name: Restart rsyslog
+  service:
+     name: rsyslog
+     state: restarted
+
+- name: Restart auditd
+  service:
+     name: auditd
+     state: restarted
+
+- name: Reconfigure GRUB
+  become: yes
+#  shell: touch -r /boot/grub2/grub.cfg && grub2-mkconfig -o /boot/grub2/grub.cfg
+  shell: /sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
+
+- name: Generate auditd rules
+  command: /usr/sbin/augenrules

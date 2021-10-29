@@ -1,0 +1,10 @@
+---
+
+- name: Partitioning - ensure necessary packages are installed
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+      - parted
+      - rsync

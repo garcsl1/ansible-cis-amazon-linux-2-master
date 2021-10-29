@@ -1,0 +1,32 @@
+# Standards: 0.11
+---
+
+# 4.3 Ensure logrotate is configured
+
+- name: 4.3 - Ensure logrotate is configured
+  copy:
+    src: ../files/logrotate.conf
+    dest: /etc/
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - level-1
+    - section-4
+    - "4.3"
+    - not-scored
+    - todo
+
+- name: 4.3 ACP_CUSTOM - Ensure dmesg messages have permissions 600
+  copy:
+    src: ../files/rhel-dmesg.service
+    dest: /etc/systemd/system/
+    owner: root
+    group: root
+    mode: '0640'
+  tags:
+    - level-1
+    - section-4
+    - "4.3"
+    - not-scored
+    - todo

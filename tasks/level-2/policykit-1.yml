@@ -1,0 +1,14 @@
+---
+
+    # 5.2.6 - Ensure SSH X11 forwarding is disabled
+    
+    - name: ensure policykit is installed so that the restart sshd handler does not fail
+      yum:
+        name: polkit
+        state: present
+      tags:
+        - level-2
+        - section-5
+        - "5.2.6"
+        - scored
+    

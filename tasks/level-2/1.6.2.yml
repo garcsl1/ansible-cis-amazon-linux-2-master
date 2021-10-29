@@ -1,0 +1,14 @@
+# Standards: 0.11
+---
+
+# 1.6.2 Ensure SELinux is installed (Scored)
+
+- name: 1.6.2 - Ensure SELinux is installed (Scored)
+  yum:
+    name: libselinux
+    state: installed
+  tags:
+    - level-2
+    - "1.6.2"
+    - scored
+    - section-1

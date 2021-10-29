@@ -1,0 +1,28 @@
+# Standards: 0.11
+---
+
+# 1.8 Ensure updates, patches, and additional security software are installed
+
+- name: 1.8 - List installed packaged
+  shell: "yum list installed"
+  tags:
+    - level-1
+    - "1.8"
+    - not-scored
+  register: yum_list_installed
+
+- debug:
+    var: yum_list_installed
+
+- name: 1.8 - Ensure updates, patches, and additional security software are installed
+  shell: "yum -y update --exclude=docker* --exclude=containerd*"
+  tags:
+    - level-1
+    - "1.8"
+    - not-scored
+  when:
+    - full_upgrade
+  register: yum_update
+
+- debug:
+    var: yum_update

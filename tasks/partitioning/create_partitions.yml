@@ -1,0 +1,176 @@
+---
+
+- name: LSBLK list debug 0
+  shell: "lsblk"
+  register: lsblk_vartmp_output
+
+- debug: var=lsblk_vartmp_output.stdout
+
+- name: Create separate partition for /var/log
+  become: true
+  parted:
+    device: "/dev/xvdf"
+    number: 1
+    align: "optimal"
+    label: "gpt"
+    name: "varlog"
+    state: "present"
+    unit: "GiB"
+    part_start: "2MB"
+    part_end: "30%"
+
+- name: Create separate partition for /var/log/audit
+  parted:
+    device: "/dev/xvdf"
+    number: 2
+    align: "optimal"
+    label: "gpt"
+    name: "varlogaudit"
+    state: "present"
+    unit: "GiB"
+    part_start: "30%"
+    part_end: "80%"
+
+- name: Create separate partition for /var/tmp
+  parted:
+    device: "/dev/xvdf"
+    number: 3
+    align: "optimal"
+    label: "gpt"
+    name: "vartmp"
+    state: "present"
+    unit: "GiB"
+    part_start: "80%"
+    part_end: "100%"
+
+- name: Format newly created partition varlog
+  filesystem:
+    dev: /dev/xvdf1
+    fstype: ext4
+
+- name: Format newly created partition varlogaudit
+  filesystem:
+    dev: /dev/xvdf2
+    fstype: ext4
+
+- name: Format newly created partition vartmp
+  filesystem:
+    dev: /dev/xvdf3
+    fstype: ext4
+
+- name: Create folders where future partitions will be mounted
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - /mnt/var/log
+    - /mnt/var/log/audit
+    - /mnt/varlog/audit
+    - /mnt/var/tmp
+    - /mnt/varlog
+    - /mnt/varlogaudit
+    - /mnt/vartmp
+
+- name: Temporary mount
+  command: "{{ item }}"
+  with_items:
+    - mount /dev/xvdf1 /mnt/varlog
+    - mount /dev/xvdf2 /mnt/varlogaudit
+    - mount /dev/xvdf3 /mnt/vartmp
+
+#- name: List current partitions and sizes
+#  command: "{{ item }}"
+#  register: command_output
+#  with_items:
+#    - lsblk
+#    - df -h
+#
+#- debug:
+#    msg: {{ command_output.stdout_lines }}
+
+- name: Syncronize folder contents from /var/log/audit and /var/log - prereqs 2
+  shell: "{{ item }}"
+  with_items:
+    - rsync -av /var/log/audit/ /mnt/varlogaudit/
+    - rsync -av --exclude=audit /var/log/ /mnt/varlog/
+
+- name: Syncronize folder contents from /var/tmp to /mnt/vartmp - prereqs 2
+  shell: "{{ item }}"
+  with_items:
+    - rsync -av /var/tmp/ /mnt/vartmp/
+
+- name: Retrieve UUID for /var/log
+  shell: "lsblk -no UUID {{ cis_partition_dev_val_log }}"
+  register: lsblk_varlog_output
+
+- debug: var=lsblk_varlog_output.stdout
+
+- name: Mount /var/log/
+  mount:
+    backup: true
+    path: "{{ item.mountpoint }}"
+    src: "UUID={{ lsblk_varlog_output.stdout }}"
+    state: present
+    fstype: "{{item.fstype}}"
+  with_items:
+    - { mountpoint: "{{cis_partition_mnt_val_log}}",fstype: "{{cis_partition_fs_val_log}}" }
+
+- name: Retrieve UUID for /var/log/audit
+  shell: "lsblk -no UUID {{ cis_partition_dev_val_log_audit }}"
+  register: lsblk_varlogaudit_output
+
+#- debug: var=lsblk_varlogaudit_output.stdout
+
+- name: Mount /var/log/audit
+  mount:
+    backup: true
+    name: "{{ item.mountpoint }}"
+    src: "UUID={{ lsblk_varlogaudit_output.stdout }}"
+    state: present
+    fstype: "{{item.fstype}}"
+  with_items:
+    - { mountpoint: "{{cis_partition_mnt_val_log_audit}}",fstype: "{{cis_partition_fs_val_log_audit}}" }
+
+- name: LSBLK list debug
+  shell: "lsblk"
+  register: lsblk_vartmp_output
+
+- debug: var=lsblk_vartmp_output.stdout
+
+- name: Retrieve UUID for /var/tmp
+  shell: "lsblk -no UUID {{ cis_partition_dev_val_tmp }}"
+  register: lsblk_vartmp_output
+
+- debug: var=lsblk_vartmp_output.stdout
+
+- name: Mount /var/tmp/
+  mount:
+    backup: true
+    name: "{{ item.mountpoint }}"
+    src: "UUID={{ lsblk_vartmp_output.stdout }}"
+    state: present
+    fstype: "{{item.fstype}}"
+  with_items:
+    - { mountpoint: "{{cis_partition_mnt_val_tmp}}",fstype: "{{cis_partition_fs_val_tmp}}" }
+
+- name: Show contents of /etc/fstab
+  command: "cat /etc/fstab"
+  register: fstab_output
+
+- debug: var=fstab_output.stdout_lines
+
+- name: Reboot machine
+  reboot:
+
+- name: Show contents of /etc/fstab
+  command: "cat /etc/fstab"
+  register: fstab_output
+
+- debug: var=fstab_output.stdout_lines
+
+- name: List current partitions and sizes
+  command: "{{ item }}"
+  with_items:
+    - lsblk
+    - df -h

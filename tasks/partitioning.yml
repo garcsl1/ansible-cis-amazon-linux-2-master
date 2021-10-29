@@ -1,0 +1,4 @@
+---
+
+- include: tasks/partitioning/prerequisites.yml
+- include: tasks/partitioning/create_partitions.yml

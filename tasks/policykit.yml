@@ -1,0 +1,6 @@
+- name: ensure policykit is installed so that the restart sshd, auditd handler does not fail
+  yum:
+    name: polkit
+    state: present
+  tags:
+    - always
