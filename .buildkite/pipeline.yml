@@ -1,0 +1,3 @@
+steps:
+- label: ":one-does-not-simply:"
+  command: ./scripts/internet.sh
